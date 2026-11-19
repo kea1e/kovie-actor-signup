@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>Kovie Student Actor Signup | Dec 1, 2026</title>
 <meta name="description" content="UARK theater students: pick a half-hour slot to perform Kovie's live roommate stories on Union Mall, Tuesday, December 1, 2026.">
 <meta property="og:title" content="Kovie Student Actor Signup">
@@ -122,7 +123,7 @@
     <p>UARK theater students, thank you for helping bring Kovie's live roommate stories to life!</p>
     <p>Kovie is a student-built roommate and housing platform through the McMillon Innovation Studio.</p>
     <p>Tap an open actor seat in any half-hour slot. It's held for you while you enter your name and UARK email. You can sign up for more than one slot, just not two seats at the same time. Sign up with a friend!</p>
-    <p>You'll get a confirmation email and a calendar invite. Short scripts will be emailed before the event. There will also be room for improvisation.</p>
+    <p>You'll get a confirmation email and a calendar invite (check Junk if you don't see them), plus a reminder the evening before. Short scripts will be emailed before the event. There will also be room for improvisation.</p>
     <p>Questions or schedule changes? Contact Kate Carter at <a href="tel:+18327738129">832-773-8129</a>.</p>
   </section>
 
@@ -286,7 +287,7 @@
         hold = null;
         openDialog('<div class="done-check" aria-hidden="true">&#10003;</div><h2 id="dlg-title">You\'re signed up, ' + esc(d.name.split(' ')[0]) + '!</h2>' +
           '<p class="sub" style="font-size:15px;color:var(--ink)"><b>' + esc(d.slotLabel) + '</b>, Actor ' + d.seat + '<br>Tuesday, December 1, 2026<br>Union Mall, near the fountain</p>' +
-          '<p style="font-size:14px">' + (d.emailed ? 'Check your UARK inbox for a confirmation email and a calendar invite.' : 'Your seat is saved. The confirmation email may be delayed; contact Kate Carter if it doesn\'t arrive.') +
+          '<p style="font-size:14px">' + (d.emailed ? 'Check your UARK inbox for a confirmation email and a calendar invite. Not there in a few minutes? Check your Junk folder and mark it Not junk.' : 'Your seat is saved. The confirmation email may be delayed; contact Kate Carter if it doesn\'t arrive.') +
           ' The email has a link to cancel if your plans change.</p>' +
           '<div class="actions"><button class="btn ghost" id="more">Add another slot</button><button class="btn primary" id="ok">Done</button></div>');
         lastSignup = { name: d.name, email: email };

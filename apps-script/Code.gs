@@ -18,6 +18,10 @@ var CONFIG = {
   location: 'Union Mall, near the fountain',
   timeZone: 'America/Chicago',
   contact: 'Kate Carter at 832-773-8129',
+  // Replies to any email this sends go to Kate, not the sending Gmail account.
+  replyTo: 'klc060@uark.edu',
+  // Reminder email to everyone still signed up.
+  reminderAt: '2026-11-30T17:00:00-06:00',
   siteUrl: 'https://kea1e.github.io/kovie-actor-signup/',
   calendarName: 'Kovie Actor Signups',
   emailDomain: 'uark.edu',
@@ -36,9 +40,9 @@ var CONFIG = {
 };
 
 /**
- * Run once from the script editor (select "setup", click Run). It creates the
- * sheet tabs, the "Kovie Actor Signups" calendar, and grants the permissions
- * the web app needs.
+ * Run from the script editor (select "setup", click Run). It creates the sheet
+ * tabs, the "Kovie Actor Signups" calendar, schedules the reminder email, and
+ * grants the permissions the web app needs. Safe to re-run.
  */
 function setup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -65,12 +69,13 @@ function setup() {
   // Touch MailApp so its permission is granted during this one-time run.
   console.log('Mail quota remaining today: ' + MailApp.getRemainingDailyQuota());
   console.log('Calendar: ' + calendarId_());
+  installReminder();
 }
 
 var SIGNUPS = 'Signups';
 var ROSTER = 'Roster';
-var HEADERS = ['Booking ID', 'Slot', 'Seat', 'Full name', 'UARK email', 'Booked at', 'Status', 'Cancelled at', 'Calendar event ID', 'Cancel token'];
-var COL = { id: 0, slot: 1, seat: 2, name: 3, email: 4, bookedAt: 5, status: 6, cancelledAt: 7, eventId: 8, token: 9 };
+var HEADERS = ['Booking ID', 'Slot', 'Seat', 'Full name', 'UARK email', 'Booked at', 'Status', 'Cancelled at', 'Calendar event ID', 'Cancel token', 'Reminder sent'];
+var COL = { id: 0, slot: 1, seat: 2, name: 3, email: 4, bookedAt: 5, status: 6, cancelledAt: 7, eventId: 8, token: 9, reminder: 10 };
 
 // ---------------------------------------------------------------- HTTP
 
@@ -379,7 +384,8 @@ function sendConfirmation_(slot, seat, name, email, token) {
     htmlBody: html,
     body: 'You are signed up for ' + slot.label + ' (Actor ' + seat + '), ' + CONFIG.dateLine + ', ' + CONFIG.location +
       '.\nQuestions? Contact ' + CONFIG.contact + '.\nCancel: ' + cancelUrl,
-    name: 'Kovie'
+    name: 'Kovie',
+    replyTo: CONFIG.replyTo
   });
 }
 
@@ -393,7 +399,84 @@ function sendCancellation_(slot, name, email) {
     subject: 'Cancelled: Kovie actor slot, ' + (slot ? slot.label : '') + ', Dec 1',
     htmlBody: html,
     body: 'Your Kovie actor slot is cancelled. Sign up again: ' + CONFIG.siteUrl,
-    name: 'Kovie'
+    name: 'Kovie',
+    replyTo: CONFIG.replyTo
+  });
+}
+
+// ---------------------------------------------------------------- reminder
+
+function reminderHtml_(slot, seat, name, token) {
+  var cancelUrl = CONFIG.siteUrl + '?cancel=' + token;
+  return emailShell_(
+    '<p>Hi ' + esc_(String(name).split(' ')[0]) + ',</p>' +
+    '<p>Quick reminder: you are performing with Kovie <b>tomorrow</b>.</p>' +
+    '<p style="background:#fff;border-left:4px solid #1b3a4b;padding:12px 14px">' +
+    '<b>' + esc_(slot.label) + '</b> (Actor ' + seat + ')<br>' + esc_(CONFIG.dateLine) + '<br>' + esc_(CONFIG.location) + '</p>' +
+    '<p>Please arrive a few minutes early. There will be room for improvisation, so have fun with it.</p>' +
+    '<p>Questions or running late? Contact ' + esc_(CONFIG.contact) + ', or just reply to this email.</p>' +
+    '<p style="font-size:13px;color:#5b6870">Can\'t make it anymore? <a href="' + cancelUrl + '">Cancel your slot</a> so someone else can take it.</p>');
+}
+
+function sendReminderEmail_(v) {
+  var slot = slotById_(v[COL.slot]);
+  MailApp.sendEmail({
+    to: String(v[COL.email]),
+    subject: 'Reminder: Kovie actor slot tomorrow, ' + slot.label,
+    htmlBody: reminderHtml_(slot, v[COL.seat], v[COL.name], v[COL.token]),
+    body: 'Reminder: you are performing with Kovie tomorrow, ' + slot.label + ' (Actor ' + v[COL.seat] + '), ' + CONFIG.dateLine + ', ' +
+      CONFIG.location + '.\nQuestions? Contact ' + CONFIG.contact + ' or reply to this email.\nCancel: ' + CONFIG.siteUrl + '?cancel=' + v[COL.token],
+    name: 'Kovie',
+    replyTo: CONFIG.replyTo
+  });
+}
+
+/** Runs from the time trigger. Sends each confirmed actor one reminder per booking. */
+function sendReminders() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sh = sheet_(SIGNUPS);
+    var sent = 0;
+    confirmedRows_().forEach(function (r) {
+      if (r.v[COL.reminder]) return;
+      try {
+        sendReminderEmail_(r.v);
+        sh.getRange(r.row, COL.reminder + 1).setValue(new Date());
+        sent++;
+      } catch (err) {
+        sh.getRange(r.row, COL.reminder + 1).setValue('FAILED ' + err);
+      }
+    });
+    console.log('Reminders sent: ' + sent);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Sends the reminder to Reese's own confirmed test bookings only, without marking anything. */
+function testReminderToReese() {
+  var n = 0;
+  confirmedRows_().forEach(function (r) {
+    if (String(r.v[COL.email]).toLowerCase() === '[removed]') { sendReminderEmail_(r.v); n++; }
+  });
+  console.log('Test reminders sent: ' + n);
+}
+
+/**
+ * Run once from the script editor. Adds the "Reminder sent" column and schedules
+ * sendReminders() for CONFIG.reminderAt. Safe to re-run: it replaces the old trigger.
+ */
+function installReminder() {
+  var su = sheet_(SIGNUPS);
+  su.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold').setBackground('#1b3a4b').setFontColor('#ffffff');
+  su.getRange(1, COL.reminder + 1, su.getMaxRows(), 1).setNumberFormat('mmm d, h:mm am/pm');
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'sendReminders') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('sendReminders').timeBased().at(new Date(CONFIG.reminderAt)).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    console.log('Trigger: ' + t.getHandlerFunction() + ' ' + t.getEventType() + ' ' + t.getUniqueId());
   });
 }
 
