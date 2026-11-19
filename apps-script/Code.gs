@@ -242,7 +242,8 @@ function book_(body) {
   var email = String(body.email || '').trim().toLowerCase();
   if (name.length < 2 || name.indexOf(' ') < 0) return { ok: false, error: 'Please enter your full name (first and last).' };
   var re = new RegExp('^[a-z0-9._%+-]+@' + CONFIG.emailDomain.replace('.', '\\.') + '$');
-  if (!re.test(email)) return { ok: false, error: 'Please use your UARK email (ends in @' + CONFIG.emailDomain + ').' };
+  var testOk = typeof TEST_EMAILS !== 'undefined' && TEST_EMAILS.indexOf(email) >= 0;  // private test inboxes, see Secret.gs
+  if (!re.test(email) && !testOk) return { ok: false, error: 'Please use your UARK email (ends in @' + CONFIG.emailDomain + ').' };
 
   if (seatTaken_(s.slot.id, s.seat)) return { ok: false, error: 'Someone just took that seat. Pick another one.' };
   var key = holdKey_(s.slot.id, s.seat);

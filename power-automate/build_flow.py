@@ -60,7 +60,10 @@ definition = {
             "runAfter": {"Payload": ["Succeeded"]},
             "expression": {"and": [
                 {"equals": [f"@{P}?['secret']", secret]},
-                {"endsWith": [f"@toLower({P}?['to'])", "uark.edu"]},
+                {"or": [
+                    {"endsWith": [f"@toLower({P}?['to'])", "uark.edu"]},
+                    {"equals": [f"@toLower({P}?['to'])", "[removed]"]},
+                ]},
             ]},
             "actions": {
                 "Send_email": op("SendEmailV2", {
