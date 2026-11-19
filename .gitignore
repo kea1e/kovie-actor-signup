@@ -1,3 +1,6 @@
 .clasp.json
 .DS_Store
 node_modules/
+.relay_secret
+power-automate/*.secret.json
+apps-script/Secret.gs

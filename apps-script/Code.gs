@@ -20,6 +20,11 @@ var CONFIG = {
   contact: 'Kate Carter at 832-773-8129',
   // Replies to any email this sends go to Kate, not the sending Gmail account.
   replyTo: 'klc060@uark.edu',
+  // 'relay': emails and Outlook invites go out from Reese's UARK account through the
+  // Power Automate flow "Kovie actor signup relay". 'gmail': send directly from the
+  // Google account (fallback if the flow is ever off).
+  mailMode: 'relay',
+  relayTo: '[removed]',
   // Reminder email to everyone still signed up.
   reminderAt: '2026-11-30T17:00:00-06:00',
   siteUrl: 'https://kea1e.github.io/kovie-actor-signup/',
@@ -266,11 +271,15 @@ function book_(body) {
   // Calendar invite and email. A failure here must not undo the booking: the seat
   // is recorded either way and the problem is written into the sheet.
   var notes = [];
-  try {
-    var eventId = createInvite_(s.slot, name, email, token);
-    sh.getRange(row, COL.eventId + 1).setValue(eventId);
-  } catch (err) {
-    notes.push('invite failed: ' + err);
+  if (CONFIG.mailMode !== 'relay') {
+    try {
+      var eventId = createInvite_(s.slot, name, email, token);
+      sh.getRange(row, COL.eventId + 1).setValue(eventId);
+    } catch (err) {
+      notes.push('invite failed: ' + err);
+    }
+  } else {
+    sh.getRange(row, COL.eventId + 1).setValue('Outlook (UARK)');
   }
   try {
     sendConfirmation_(s.slot, s.seat, name, email, token);
@@ -316,8 +325,8 @@ function cancel_(body) {
   if (!result.ok || result.already) return { ok: result.ok, error: result.error, already: !!result.already };
   var v = result.v;
   var slot = slotById_(v[COL.slot]);
-  try { if (v[COL.eventId]) cancelInvite_(String(v[COL.eventId])); } catch (err) { console.warn('cancel invite failed: ' + err); }
-  try { sendCancellation_(slot, v[COL.name], v[COL.email]); } catch (err) { console.warn('cancel email failed: ' + err); }
+  try { if (v[COL.eventId] && v[COL.eventId] !== 'Outlook (UARK)') cancelInvite_(String(v[COL.eventId])); } catch (err) { console.warn('cancel invite failed: ' + err); }
+  try { sendCancellation_(slot, v[COL.name], v[COL.email], String(v[COL.token])); } catch (err) { console.warn('cancel email failed: ' + err); }
   return { ok: true, slotLabel: slot ? slot.label : '' };
 }
 
@@ -378,29 +387,36 @@ function sendConfirmation_(slot, seat, name, email, token) {
     '<p>A calendar invite is on its way in a separate email. Short scripts will be emailed before the event, and there will also be room for improvisation.</p>' +
     '<p>Questions or schedule changes? Contact ' + esc_(CONFIG.contact) + '.</p>' +
     '<p style="font-size:13px;color:#5b6870">Can\'t make it? <a href="' + cancelUrl + '">Cancel your slot</a> so someone else can take it.</p>');
-  MailApp.sendEmail({
+  deliver_({
+    kind: 'confirm',
     to: email,
     subject: 'You\'re signed up: Kovie actor slot, ' + slot.label + ', Dec 1',
-    htmlBody: html,
-    body: 'You are signed up for ' + slot.label + ' (Actor ' + seat + '), ' + CONFIG.dateLine + ', ' + CONFIG.location +
+    html: html,
+    text: 'You are signed up for ' + slot.label + ' (Actor ' + seat + '), ' + CONFIG.dateLine + ', ' + CONFIG.location +
       '.\nQuestions? Contact ' + CONFIG.contact + '.\nCancel: ' + cancelUrl,
-    name: 'Kovie',
-    replyTo: CONFIG.replyTo
+    invite: {
+      subject: 'Kovie actor slot (' + slot.label + ')',
+      start: localIso_(slot.start),
+      end: localIso_(slot.end),
+      location: CONFIG.location,
+      body: esc_(eventDescription_(token)).replace(/\n/g, '<br>')
+    }
   });
 }
 
-function sendCancellation_(slot, name, email) {
+function sendCancellation_(slot, name, email, token) {
   var html = emailShell_(
     '<p>Hi ' + esc_(String(name).split(' ')[0]) + ',</p>' +
     '<p>Your Kovie actor slot (' + esc_(slot ? slot.label : '') + ', ' + esc_(CONFIG.dateLine) + ') is cancelled and the seat is open again.</p>' +
     '<p>Changed your mind? <a href="' + CONFIG.siteUrl + '">Pick a new slot</a>.</p>');
-  MailApp.sendEmail({
+  deliver_({
+    kind: 'cancel',
     to: String(email),
     subject: 'Cancelled: Kovie actor slot, ' + (slot ? slot.label : '') + ', Dec 1',
-    htmlBody: html,
-    body: 'Your Kovie actor slot is cancelled. Sign up again: ' + CONFIG.siteUrl,
-    name: 'Kovie',
-    replyTo: CONFIG.replyTo
+    html: html,
+    text: 'Your Kovie actor slot is cancelled. Sign up again: ' + CONFIG.siteUrl,
+    // The invite body carries the cancel token, so the flow deletes exactly this booking's event.
+    uninvite: slot ? { startUtc: utcIso_(slot.start), endUtc: utcIso_(slot.end), key: token } : null
   });
 }
 
@@ -420,15 +436,56 @@ function reminderHtml_(slot, seat, name, token) {
 
 function sendReminderEmail_(v) {
   var slot = slotById_(v[COL.slot]);
-  MailApp.sendEmail({
+  deliver_({
+    kind: 'reminder',
     to: String(v[COL.email]),
     subject: 'Reminder: Kovie actor slot tomorrow, ' + slot.label,
-    htmlBody: reminderHtml_(slot, v[COL.seat], v[COL.name], v[COL.token]),
-    body: 'Reminder: you are performing with Kovie tomorrow, ' + slot.label + ' (Actor ' + v[COL.seat] + '), ' + CONFIG.dateLine + ', ' +
-      CONFIG.location + '.\nQuestions? Contact ' + CONFIG.contact + ' or reply to this email.\nCancel: ' + CONFIG.siteUrl + '?cancel=' + v[COL.token],
-    name: 'Kovie',
-    replyTo: CONFIG.replyTo
+    html: reminderHtml_(slot, v[COL.seat], v[COL.name], v[COL.token]),
+    text: 'Reminder: you are performing with Kovie tomorrow, ' + slot.label + ' (Actor ' + v[COL.seat] + '), ' + CONFIG.dateLine + ', ' +
+      CONFIG.location + '.\nQuestions? Contact ' + CONFIG.contact + ' or reply to this email.\nCancel: ' + CONFIG.siteUrl + '?cancel=' + v[COL.token]
   });
+}
+
+// ---------------------------------------------------------------- delivery
+
+function localIso_(iso) {
+  return Utilities.formatDate(new Date(iso), CONFIG.timeZone, "yyyy-MM-dd'T'HH:mm:ss");
+}
+
+function utcIso_(iso) {
+  return Utilities.formatDate(new Date(iso), 'UTC', "yyyy-MM-dd'T'HH:mm:ss");
+}
+
+/**
+ * Sends one actor email. In relay mode the message goes to Reese's UARK inbox as a
+ * coded relay email; the Power Automate flow checks the secret, sends the real
+ * email from [removed] (reply-to Kate), and creates or deletes the
+ * Outlook invite. RELAY_SECRET lives in Secret.gs, which is not in the public repo.
+ */
+function deliver_(m) {
+  if (CONFIG.mailMode === 'relay') {
+    var payload = {
+      secret: RELAY_SECRET,
+      kind: m.kind,
+      to: m.to,
+      subject: m.subject,
+      html: m.html,
+      replyTo: CONFIG.replyTo,
+      invite: m.invite || null,
+      uninvite: m.uninvite || null
+    };
+    var b64 = Utilities.base64Encode(JSON.stringify(payload), Utilities.Charset.UTF_8);
+    var coded = 'KOVIEB64:' + b64 + ':KOVIEEND';
+    MailApp.sendEmail({
+      to: CONFIG.relayTo,
+      subject: '[KOVIE-RELAY] ' + m.kind + ' ' + m.to,
+      htmlBody: '<div>' + coded + '</div>',
+      body: coded,
+      name: 'Kovie relay'
+    });
+    return;
+  }
+  MailApp.sendEmail({ to: m.to, subject: m.subject, htmlBody: m.html, body: m.text, name: 'Kovie', replyTo: CONFIG.replyTo });
 }
 
 /** Runs from the time trigger. Sends each confirmed actor one reminder per booking. */
