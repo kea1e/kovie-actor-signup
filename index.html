@@ -121,7 +121,7 @@
   <section class="intro">
     <p>UARK theater students, thank you for helping bring Kovie's live roommate stories to life!</p>
     <p>Kovie is a student-built roommate and housing platform through the McMillon Innovation Studio.</p>
-    <p>Choose one open half-hour slot and tap an open actor seat. It's held for you while you enter your name and UARK email. Sign up with a friend!</p>
+    <p>Tap an open actor seat in any half-hour slot. It's held for you while you enter your name and UARK email. You can sign up for more than one slot, just not two seats at the same time. Sign up with a friend!</p>
     <p>You'll get a confirmation email and a calendar invite. Short scripts will be emailed before the event. There will also be room for improvisation.</p>
     <p>Questions or schedule changes? Contact Kate Carter at <a href="tel:+18327738129">832-773-8129</a>.</p>
   </section>
@@ -153,6 +153,7 @@
   var hold = null;          // { slotId, seat, holdId, expiresAt, slotLabel }
   var timerId = null;
   var pollId = null;
+  var lastSignup = null;   // prefill name/email when the same person adds another slot
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
@@ -227,7 +228,7 @@
       .then(function (d) {
         if (!d.ok) { showError(d.error); load(); return; }
         hold = { slotId: slotId, seat: seat, holdId: d.holdId, expiresAt: d.expiresAt, slotLabel: d.slotLabel };
-        render(); showForm();
+        render(); showForm(lastSignup);
       }).catch(function () { showError('Network problem. Please try again.'); });
   }
 
@@ -287,7 +288,9 @@
           '<p class="sub" style="font-size:15px;color:var(--ink)"><b>' + esc(d.slotLabel) + '</b>, Actor ' + d.seat + '<br>Tuesday, December 1, 2026<br>Union Mall, near the fountain</p>' +
           '<p style="font-size:14px">' + (d.emailed ? 'Check your UARK inbox for a confirmation email and a calendar invite.' : 'Your seat is saved. The confirmation email may be delayed; contact Kate Carter if it doesn\'t arrive.') +
           ' The email has a link to cancel if your plans change.</p>' +
-          '<div class="actions"><button class="btn primary" id="ok">Done</button></div>');
+          '<div class="actions"><button class="btn ghost" id="more">Add another slot</button><button class="btn primary" id="ok">Done</button></div>');
+        lastSignup = { name: d.name, email: email };
+        document.getElementById('more').onclick = closeDialog;
         document.getElementById('ok').onclick = closeDialog;
         load();
       }).catch(function () {

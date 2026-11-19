@@ -217,6 +217,10 @@ function release_(body) {
 
 // ---------------------------------------------------------------- book
 
+function overlaps_(a, b) {
+  return new Date(a.start) < new Date(b.end) && new Date(b.start) < new Date(a.end);
+}
+
 function cleanName_(n) {
   return String(n || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
 }
@@ -235,10 +239,16 @@ function book_(body) {
   var hold = activeHolds_()[key];
   if (hold && hold.holdId !== body.holdId) return { ok: false, error: 'Your hold on this seat expired and someone else is signing up for it. Pick another seat.' };
 
-  var dupe = confirmedRows_().filter(function (r) { return String(r.v[COL.email]).toLowerCase() === email; })[0];
-  if (dupe) {
-    var other = slotById_(dupe.v[COL.slot]);
-    return { ok: false, error: 'This email is already signed up for ' + (other ? other.label : 'a slot') + '. Use the cancel link in your confirmation email first if you want to switch.' };
+  // One person can take several slots, but never two that overlap in time
+  // (which includes both seats of the same slot).
+  var clash = confirmedRows_().filter(function (r) {
+    if (String(r.v[COL.email]).toLowerCase() !== email) return false;
+    var other = slotById_(r.v[COL.slot]);
+    return other && overlaps_(other, s.slot);
+  })[0];
+  if (clash) {
+    var taken = slotById_(clash.v[COL.slot]);
+    return { ok: false, error: 'You are already signed up for ' + taken.label + ', which is the same time. Pick a different time slot.' };
   }
 
   var id = 'K' + Utilities.formatDate(new Date(), CONFIG.timeZone, 'MMddHHmmss') + Math.floor(Math.random() * 90 + 10);

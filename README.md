@@ -11,7 +11,7 @@ Public signup page for UARK theater students performing Kovie's live roommate st
 - Booking writes a row to the **Kovie Actor Signup** Google Sheet, sends a confirmation email, and sends a Google Calendar invite from the **Kovie Actor Signups** calendar.
 - The confirmation email has a cancel link (`?cancel=TOKEN`) that frees the seat and withdraws the invite.
 - The page shows names of signed-up actors. Emails are never returned by the API; they live only in the sheet.
-- One slot per email, `@uark.edu` addresses only. Signups close at 11:00 a.m. on December 1.
+- `@uark.edu` addresses only. One person can take several slots, but not two seats at the same time. Signups close at 11:00 a.m. on December 1.
 
 ## Backend
 
