@@ -37,7 +37,7 @@
   header { display: flex; gap: 24px; align-items: flex-start; justify-content: space-between; }
   h1 { color: var(--navy); font-size: clamp(28px, 4.5vw, 40px); font-weight: 700; margin: 6px 0 8px; letter-spacing: -0.01em; }
   .meta { font-size: 17px; margin: 0; }
-  .meta span { color: var(--muted); padding: 0 8px; }
+  .meta .sep { color: var(--muted); padding: 0 8px; }
   .logo { flex: none; width: 76px; height: 76px; background: var(--navy-deep); border-radius: 6px; display: grid; place-items: center; }
   .logo img { width: 60px; height: auto; display: block; }
   .intro { margin: 26px 0 28px; font-size: 16px; }
@@ -96,8 +96,9 @@
     header { flex-direction: row; }
     .logo { width: 58px; height: 58px; }
     .logo img { width: 46px; }
-    .meta span { display: none; }
-    .meta { display: flex; flex-direction: column; font-size: 15px; }
+    .meta .sep { display: none; }
+    .meta .m { display: block; }
+    .meta { font-size: 15px; }
     .thead { display: none; }
     .row { grid-template-columns: 1fr 1fr; }
     .slot { grid-column: 1 / -1; padding: 12px 14px 4px; background: transparent; }
@@ -112,7 +113,7 @@
   <header>
     <div>
       <h1>Kovie Student Actor Signup</h1>
-      <p class="meta">Tuesday, December 1, 2026<span>|</span>11:00 a.m. to 2:00 p.m.<span>|</span>Union Mall, near the fountain</p>
+      <p class="meta"><span class="m">Tuesday, December 1, 2026</span><span class="sep">|</span><span class="m">11:00 a.m. to 2:00 p.m.</span><span class="sep">|</span><span class="m">Union Mall, near the fountain</span></p>
     </div>
     <div class="logo"><img src="assets/kovie-logo-lockup-white.png" alt="Kovie"></div>
   </header>
