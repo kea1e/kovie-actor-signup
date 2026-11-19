@@ -16,7 +16,7 @@ Public signup page for UARK theater students performing Kovie's live roommate st
 
 ## Relay flow (Power Automate)
 
-`power-automate/build_flow.py <secret> <connectionName>` prints the flow's Dataverse `clientdata`. The flow was created and is updated through the Dataverse Web API (`/api/data/v9.2/workflows`) from a signed-in `crm.dynamics.com` tab. The secret lives only in `apps-script/Secret.gs`, `.relay_secret` and the flow, all kept out of Git. Set `CONFIG.mailMode = 'gmail'` in `Code.gs` to fall back to sending directly from Google if the flow is ever off.
+`power-automate/build_flow.py <secret> <connectionName> <relaySenderGmail>` prints the flow's Dataverse `clientdata`. The flow was created and is updated through the Dataverse Web API (`/api/data/v9.2/workflows`) from a signed-in `crm.dynamics.com` tab. The secret lives only in `apps-script/Secret.gs`, `.relay_secret` and the flow, all kept out of Git. Set `CONFIG.mailMode = 'gmail'` in `Code.gs` to fall back to sending directly from Google if the flow is ever off.
 
 ## Backend
 

@@ -512,11 +512,11 @@ function sendReminders() {
   }
 }
 
-/** Sends the reminder to Reese's own confirmed test bookings only, without marking anything. */
+/** Sends the reminder to the owner's own confirmed test bookings only (OWNER_TEST_EMAIL in Secret.gs), without marking anything. */
 function testReminderToReese() {
   var n = 0;
   confirmedRows_().forEach(function (r) {
-    if (String(r.v[COL.email]).toLowerCase() === '[removed]') { sendReminderEmail_(r.v); n++; }
+    if (typeof OWNER_TEST_EMAIL !== 'undefined' && String(r.v[COL.email]).toLowerCase() === OWNER_TEST_EMAIL) { sendReminderEmail_(r.v); n++; }
   });
   console.log('Test reminders sent: ' + n);
 }

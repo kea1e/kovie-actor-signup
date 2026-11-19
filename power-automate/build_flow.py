@@ -5,11 +5,12 @@ KOVIEB64:<base64 JSON>:KOVIEEND. The flow decodes it, checks the shared secret a
 the recipient domain, then sends the email (reply-to Kate) and creates or deletes
 the Outlook calendar invite from Reese's UARK account.
 
-Usage: python3 build_flow.py <secret> <connectionName>  -> prints clientdata JSON
+Usage: python3 build_flow.py <secret> <connectionName> <relaySenderGmail>  -> prints clientdata JSON
+The relay sender (the Google account running Apps Script) is also allowed as a test recipient.
 """
 import json, sys
 
-secret, conn = sys.argv[1], sys.argv[2]
+secret, conn, sender = sys.argv[1], sys.argv[2], sys.argv[3].lower()
 P = "outputs('Payload')"
 api = {"connectionName": "shared_office365", "operationId": None, "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"}
 
@@ -43,7 +44,7 @@ definition = {
                 "host": dict(api, operationId="OnNewEmailV3"),
                 "parameters": {
                     "folderPath": "Inbox",
-                    "from": "[removed]",
+                    "from": sender,
                     "subjectFilter": "[KOVIE-RELAY]",
                     "importance": "Any",
                     "fetchOnlyWithAttachment": False,
@@ -62,7 +63,7 @@ definition = {
                 {"equals": [f"@{P}?['secret']", secret]},
                 {"or": [
                     {"endsWith": [f"@toLower({P}?['to'])", "uark.edu"]},
-                    {"equals": [f"@toLower({P}?['to'])", "[removed]"]},
+                    {"equals": [f"@toLower({P}?['to'])", sender]},
                 ]},
             ]},
             "actions": {
