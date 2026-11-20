@@ -1,6 +1,6 @@
 """Builds the Power Automate flow definition (Dataverse clientdata) for the Kovie relay.
 
-Apps Script emails [removed] a relay message whose body carries
+Apps Script emails the organizer's UARK mailbox a relay message whose body carries
 KOVIEB64:<base64 JSON>:KOVIEEND. The flow decodes it, checks the shared secret and
 the recipient domain, then sends the email (reply-to Kate) and creates or deletes
 the Outlook calendar invite from Reese's UARK account.

@@ -8,7 +8,7 @@ Public signup page for UARK theater students performing Kovie's live roommate st
 
 - `index.html` is a static page on GitHub Pages. It shows six half-hour slots with two actor seats each.
 - Tapping an open seat places a 5 minute hold on it, so nobody else can take it while the actor fills in their name and UARK email.
-- Booking writes a row to the **Kovie Actor Signup** Google Sheet. Emails and calendar invites go out from **[removed]** (reply-to Kate) so they arrive as internal UARK mail: Apps Script sends a coded relay email to that inbox, and the Power Automate flow **Kovie actor signup relay** (UARK account) checks a shared secret, sends the email, and creates the Outlook invite.
+- Booking writes a row to the **Kovie Actor Signup** Google Sheet. Emails and calendar invites go out from the organizer's UARK Outlook account (reply-to Kate) so they arrive as internal UARK mail: Apps Script sends a coded relay email to that inbox, and the Power Automate flow **Kovie actor signup relay** (UARK account) checks a shared secret, sends the email, and creates the Outlook invite.
 - The confirmation email has a cancel link (`?cancel=TOKEN`) that frees the seat, sends a cancellation email, and deletes the Outlook invite (matched by the token in the invite body).
 - A reminder goes to every confirmed actor at 5 p.m. on Nov 30 (Apps Script time trigger, same relay).
 - The page shows names of signed-up actors. Emails are never returned by the API; they live only in the sheet.

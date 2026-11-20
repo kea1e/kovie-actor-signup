@@ -24,7 +24,6 @@ var CONFIG = {
   // Power Automate flow "Kovie actor signup relay". 'gmail': send directly from the
   // Google account (fallback if the flow is ever off).
   mailMode: 'relay',
-  relayTo: '[removed]',
   // Reminder email to everyone still signed up.
   reminderAt: '2026-11-30T17:00:00-06:00',
   siteUrl: 'https://kea1e.github.io/kovie-actor-signup/',
@@ -460,7 +459,7 @@ function utcIso_(iso) {
 /**
  * Sends one actor email. In relay mode the message goes to Reese's UARK inbox as a
  * coded relay email; the Power Automate flow checks the secret, sends the real
- * email from [removed] (reply-to Kate), and creates or deletes the
+ * email from the organizer's UARK mailbox (reply-to Kate), and creates or deletes the
  * Outlook invite. RELAY_SECRET lives in Secret.gs, which is not in the public repo.
  */
 function deliver_(m) {
@@ -478,7 +477,7 @@ function deliver_(m) {
     var b64 = Utilities.base64Encode(JSON.stringify(payload), Utilities.Charset.UTF_8);
     var coded = 'KOVIEB64:' + b64 + ':KOVIEEND';
     MailApp.sendEmail({
-      to: CONFIG.relayTo,
+      to: RELAY_TO,  // organizer's UARK mailbox, set in Secret.gs (read at call time)
       subject: '[KOVIE-RELAY] ' + m.kind + ' ' + m.to,
       htmlBody: '<div>' + coded + '</div>',
       body: coded,
