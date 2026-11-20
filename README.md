@@ -31,3 +31,7 @@ clasp redeploy <deploymentId> --description "update"   # keeps the same /exec UR
 The sheet has two tabs: **Roster** (same layout as the original spreadsheet, rebuilt on every change) and **Signups** (the full log, including cancellations).
 
 Event details, slot times and the contact line are in `CONFIG` at the top of `apps-script/Code.gs` and in the text of `index.html`.
+
+## Smoke test
+
+`python3 tests/smoke.py <your-own-uark-email>` checks the live page and API: secret files not served, no emails or tokens in public responses, input validation, the hold race (two people tapping one seat), hold theft, same-time double booking, and name sanitising. It books seat 1:00 / Actor 1 once with your address and leaves it booked; cancel it with the link in the confirmation email (the test also covers that path manually: email, Outlook invite created, invite deleted on cancel, roster cleared).
